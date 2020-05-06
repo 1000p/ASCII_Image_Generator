@@ -1,0 +1,3 @@
+﻿  mainFunction.cpp
+C:\Users\loopg\Local Project\New folder\Image to ASCII visualizer\ASCIIBuilder.h(28,25): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+  Image to ASCII visualizer.vcxproj -> C:\Users\loopg\Local Project\New folder\Image to ASCII visualizer\Debug\Image to ASCII visualizer.exe
