@@ -1,3 +1,11 @@
-﻿  mainFunction.cpp
-C:\Users\loopg\Local Project\New folder\Image to ASCII visualizer\ASCIIBuilder.h(36,25): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-  Image to ASCII visualizer.vcxproj -> C:\Users\loopg\Local Project\New folder\Image to ASCII visualizer\Debug\Image to ASCII visualizer.exe
+﻿  ASCIIBuilder.cpp
+C:\Users\loopg\Local Project\Image to ASCII visualizer\Image to ASCII visualizer\ASCIIBuilder.cpp(21,21): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Users\loopg\Local Project\Image to ASCII visualizer\Image to ASCII visualizer\ASCIIBuilder.cpp(102,30): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Users\loopg\Local Project\Image to ASCII visualizer\Image to ASCII visualizer\ASCIIBuilder.cpp(103,21): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
+C:\Users\loopg\Local Project\Image to ASCII visualizer\Image to ASCII visualizer\ASCIIBuilder.cpp(104,19): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
+C:\Users\loopg\Local Project\Image to ASCII visualizer\Image to ASCII visualizer\ASCIIBuilder.cpp(108,29): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Users\loopg\Local Project\Image to ASCII visualizer\Image to ASCII visualizer\ASCIIBuilder.cpp(109,21): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
+C:\Users\loopg\Local Project\Image to ASCII visualizer\Image to ASCII visualizer\ASCIIBuilder.cpp(110,19): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
+  mainFunction.cpp
+  Generating Code...
+  Image to ASCII visualizer.vcxproj -> C:\Users\loopg\Local Project\Image to ASCII visualizer\Image to ASCII visualizer\Debug\Image to ASCII visualizer.exe

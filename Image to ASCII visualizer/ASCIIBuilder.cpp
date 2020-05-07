@@ -1,5 +1,49 @@
 #include "ASCIIBuilder.h"
 
+ASCIIBuilder::ASCIIBuilder() :renderer(nullptr),drawWindow(nullptr),
+image(nullptr), pFormat(nullptr),colored(false) 
+{}
+
+void ASCIIBuilder::init(SDL_Surface* surf)
+{
+    //Assign the image surface and paintTable
+    image = surf;
+    paintTable = { "``", "^^", "\"\"", ",,", "::", ";;", "II", "ll", "!!", "ii",
+        "~~", "++", "__", "--", "??", "]]", "[[", "}}", "{{", "11", "))", "((",
+        "||", "\\\\", "//", "tt", "ff", "jj", "rr", "xx", "nn", "uu", "vv", "cc",
+        "zz", "XX", "YY", "UU", "JJ", "CC", "LL", "QQ", "00", "OO", "ZZ", "mm",
+        "ww", "qq", "pp", "dd", "bb", "kk", "hh", "aa", "oo", "**", "##", "MM",
+        "WW", "&&", "88", "%%", "BB", "@@", "$$", };
+
+    tableSize = paintTable.size();
+
+    //charMod is used to get index of element in the paintTable
+    charMod = 255.0 / tableSize;
+    //Reserve space in hash table
+    glyphsTextures.reserve(tableSize);
+    createRendererAndWindow();
+
+    //Scale image to avoid enormous resolution
+    resizeSurface();
+    //Get the pixel format of the surface
+    pFormat = image->format;
+
+    //Reserve space for the tiling vector
+    charVec.reserve(width * height);
+    convertCharsToTextures();
+
+    //Should color the image ?
+    char confirm;
+    std::cout << "Create colored image? Press Y for yes and any other key for no.\nY/N?";
+    std::cin >> confirm;
+    if (confirm == 'Y' || confirm == 'y')
+    {
+        colored = true;
+        pixelColors.reserve(charVec.size());
+    }
+    
+}
+
 void ASCIIBuilder::build()
 {
     for (int row = 0; row < this->height; ++row)
@@ -14,6 +58,23 @@ void ASCIIBuilder::build()
 
 
     //REMOVED FROM HERE
+}
+
+void ASCIIBuilder::close()
+{
+    //Release resources
+
+    //Clear texture hash table
+    for (auto p : glyphsTextures)
+    {
+        SDL_DestroyTexture(p.second);
+    }
+    glyphsTextures.clear();
+
+    //Destroy window and renderer
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(drawWindow);
+
 }
 
 void ASCIIBuilder::resizeSurface()
@@ -33,16 +94,18 @@ void ASCIIBuilder::resizeSurface()
 
 
     //Resize according to aspect ratio
-    float aspectRatio = W / (H * 1.0);
+    float aspectRatio ;
     if (W > 680 || H > 680)
     {
         if (W > H)
         {
+            aspectRatio =  W / (H * 1.0);
             H = 680 / aspectRatio;
             W = H * aspectRatio;
         }
         else
         {
+            aspectRatio = H / (W * 1.0);
             W = 680 / aspectRatio;
             H = W * aspectRatio;
         }
@@ -121,6 +184,11 @@ char ASCIIBuilder::convertToChar(const Uint32& pixel)
 
     it = (int(brightness / charMod) >= tableSize) ? tableSize - 1 : int(brightness / charMod);
     char toRet = paintTable[it][0];
+
+    if (colored)
+    {
+        pixelColors.push_back(RGB);
+    }
 
     return toRet;
 }
@@ -213,23 +281,16 @@ void ASCIIBuilder::draw()
     //Destination for rendering
     SDL_Rect dst = { 0, 0, W, H };
 
-    for (auto c : charVec)
+    if (colored)
     {
-        //Still printing a row
-        if (c != '\n')
-        {
-            SDL_RenderCopy(renderer, glyphsTextures[c], NULL, &dst);
-
-            dst.x += W;
-        }
-        //We hit a row end move to a new row
-        else
-        {
-            dst.x = 0;
-            dst.y += H;
-            SDL_RenderCopy(renderer, glyphsTextures[c], NULL, &dst);
-        }
+        drawColored(dst);
     }
+    else
+    {
+       drawNoColor(dst);
+    }
+   
+    
     //Present to output texture
     SDL_RenderPresent(renderer);
     //Open preview window, target it with renderer,
@@ -249,6 +310,59 @@ void ASCIIBuilder::draw()
     //Release the vector of chars
     charVec.clear();
 
+}
+
+void ASCIIBuilder::drawColored(SDL_Rect& destination)
+{
+    int W = destination.w;
+    int H = destination.h;
+
+    int it = 0;
+    for (auto c : charVec)
+    {
+        SDL_Texture* texP = glyphsTextures[c];
+        SDL_Color* colorP;
+
+        //Still printing a row
+        if (c != '\n')
+        {
+            colorP = &pixelColors[it];
+            SDL_SetTextureColorMod(texP, colorP->r, colorP->g, colorP->b);
+            SDL_RenderCopy(renderer, texP, NULL, &destination);
+            destination.x += W;
+            ++it;
+        }
+        //We hit a row end move to a new row
+        else
+        {
+            destination.x = 0;
+            destination.y += H;
+        }
+
+    }
+}
+
+void ASCIIBuilder::drawNoColor(SDL_Rect& destination)
+{
+    int W = destination.w;
+    int H = destination.h;
+
+    for (auto c : charVec)
+    {
+        //Still printing a row
+        if (c != '\n')
+        {
+            SDL_RenderCopy(renderer, glyphsTextures[c], NULL, &destination);
+
+            destination.x += W;
+        }
+        //We hit a row end move to a new row
+        else
+        {
+            destination.x = 0;
+            destination.y += H;
+        }
+    }
 }
 
 void ASCIIBuilder::save_texture(const char* file_name, SDL_Renderer* renderer, SDL_Texture* texture)

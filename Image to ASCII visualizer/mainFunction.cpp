@@ -28,10 +28,10 @@ SDL_Surface* tryLoad(std::string& path)
     if (image == nullptr)
     {
         std::cout << "Error loading the image with path: " << path << "\n" <<
-            "Please try again.\n You left with " << tryCounter << " number of tries"
+            "Please try again.\nYou left with " << tryCounter << " number of tries"
             " before the program terminates!" << std::endl;
         --tryCounter;
-        if (tryCounter <= 0)
+        if (tryCounter < 0)
         {
             terminateProgram("You have reached zero number of tries! \n", -404);
         }
