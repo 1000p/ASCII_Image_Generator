@@ -1,0 +1,14 @@
+﻿  ASCIIBuilder.cpp
+C:\Users\loopg\Local Project\Image to ASCII visualizer\Image to ASCII visualizer\ASCIIBuilder.cpp(21,21): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Users\loopg\Local Project\Image to ASCII visualizer\Image to ASCII visualizer\ASCIIBuilder.cpp(102,30): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Users\loopg\Local Project\Image to ASCII visualizer\Image to ASCII visualizer\ASCIIBuilder.cpp(103,21): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
+C:\Users\loopg\Local Project\Image to ASCII visualizer\Image to ASCII visualizer\ASCIIBuilder.cpp(104,19): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
+C:\Users\loopg\Local Project\Image to ASCII visualizer\Image to ASCII visualizer\ASCIIBuilder.cpp(108,29): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Users\loopg\Local Project\Image to ASCII visualizer\Image to ASCII visualizer\ASCIIBuilder.cpp(109,21): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
+C:\Users\loopg\Local Project\Image to ASCII visualizer\Image to ASCII visualizer\ASCIIBuilder.cpp(110,19): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
+  mainFunction.cpp
+  Generating code
+  Previous IPDB not found, fall back to full compilation.
+  All 510 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  Image to ASCII visualizer.vcxproj -> C:\Users\loopg\Local Project\Image to ASCII visualizer\Image to ASCII visualizer\Release\Image to ASCII visualizer.exe
