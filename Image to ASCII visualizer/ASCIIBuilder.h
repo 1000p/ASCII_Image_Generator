@@ -12,9 +12,17 @@
 class ASCIIBuilder
 {
 public:
-    ASCIIBuilder(SDL_Surface* surf) :
-        image(surf)
+    ASCIIBuilder(SDL_Surface* surf) 
     {
+        init(surf);
+    }
+
+    ASCIIBuilder() = default;
+
+    void init(SDL_Surface* surf)
+    {
+        //Assign the image surface and paintTable
+        image = surf;
         paintTable = { "``", "^^", "\"\"", ",,", "::", ";;", "II", "ll", "!!", "ii",
         "~~", "++", "__", "--", "??", "]]", "[[", "}}", "{{", "11", "))", "((",
          "||", "\\\\", "//", "tt", "ff", "jj", "rr", "xx", "nn", "uu", "vv", "cc",
@@ -38,7 +46,6 @@ public:
         //Reserve space for the tiling vector
         charVec.reserve(width * height);
         convertCharsToTextures();
-
     }
 
     void build();
