@@ -1,4 +1,52 @@
 #include "ASCIIBuilder.h"
+#include "UtilityFunctions.h"
+
+ASCIIBuilder::ASCIIBuilder() :renderer(nullptr), drawWindow(nullptr),
+image(nullptr), colored(false)
+{}
+
+void ASCIIBuilder::init(SDL_Surface* surf)
+{
+    //Assign the image surface and paintTable
+    image = surf;
+    paintTable = { "``", "^^", "\"\"", ",,", "::", ";;", "II", "ll", "!!", "ii",
+        "~~", "++", "__", "--", "??", "]]", "[[", "}}", "{{", "11", "))", "((",
+        "||", "\\\\", "//", "tt", "ff", "jj", "rr", "xx", "nn", "uu", "vv", "cc",
+        "zz", "XX", "YY", "UU", "JJ", "CC", "LL", "QQ", "00", "OO", "ZZ", "mm",
+        "ww", "qq", "pp", "dd", "bb", "kk", "hh", "aa", "oo", "**", "##", "MM",
+        "WW", "&&", "88", "%%", "BB", "@@", "$$", };
+
+    tableSize = paintTable.size();
+
+    //charMod is used to get index of element in the paintTable
+    charMod = 255.0 / tableSize;
+    //Reserve space in hash table
+    glyphsTextures.reserve(tableSize);
+    createRendererAndWindow();
+
+    //Scale image to avoid enormous resolution
+    resizeSurface();
+
+    //Get the pixel format of the surface
+    pFormat = *image->format;
+
+    //Reserve space for the tiling vector
+    charVec.reserve(width * height);
+    convertCharsToTextures();
+
+    SDL_HideWindow(drawWindow);
+
+    //Should color the image ?
+    char confirm;
+    std::cout << "\nCreate colored image? Press Y for YES and any other key for NO.\nY/N?";
+    std::cin >> confirm;
+    if (confirm == 'Y' || confirm == 'y')
+    {
+        colored = true;
+        pixelColors.reserve(charVec.size());
+    }
+
+}
 
 void ASCIIBuilder::build()
 {
@@ -12,38 +60,68 @@ void ASCIIBuilder::build()
         charVec.emplace_back('\n');
     }
 
+    //Release image resources 
+    SDL_FreeSurface(image);
+}
 
-    //REMOVED FROM HERE
+void ASCIIBuilder::close()
+{
+    //Release resources
+
+    //Clear texture hash table
+    for (auto p : glyphsTextures)
+    {
+        SDL_DestroyTexture(p.second);
+    }
+    glyphsTextures.clear();
+
+    //Destroy window and renderer
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(drawWindow);
+
 }
 
 void ASCIIBuilder::resizeSurface()
 {
-
+    //In order to renderer to work correctly
     SDL_ShowWindow(drawWindow);
     SDL_RenderClear(renderer);
     SDL_RenderPresent(renderer);
 
     //Convert surface to texture
     SDL_Texture* original = SDL_CreateTextureFromSurface(renderer, image);
+
+    //Free surface to release memory and get it's format for later in the function
+    pFormat = *image->format;
+    SDL_FreeSurface(image);
+
     Uint32 format;
     int W;
     int H;
     //Get texture data and set widht and height
     SDL_QueryTexture(original, &format, NULL, &W, &H);
 
+    //Restrict output image to 8k
+    int maxPixelOnVertice = 8192;
 
+    //Get modifier from division of 13 (because that's how "big" one "symbol pixel" is)
+    int modifier = 8192 / 13;
+
+    
     //Resize according to aspect ratio
-    float aspectRatio = W / (H * 1.0);
-    if (W > 680 || H > 680)
+    float aspectRatio;
+    if (W > modifier || H > modifier)
     {
         if (W > H)
         {
-            H = 680 / aspectRatio;
+            aspectRatio = W / (H * 1.0);
+            H = modifier / aspectRatio;
             W = H * aspectRatio;
         }
         else
         {
-            W = 680 / aspectRatio;
+            aspectRatio = H / (W * 1.0);
+            W = modifier / aspectRatio;
             H = W * aspectRatio;
         }
     }
@@ -57,12 +135,11 @@ void ASCIIBuilder::resizeSurface()
     //Set target,render image
     SDL_SetRenderTarget(renderer, resized);
     SDL_RenderClear(renderer);
-    SDL_RenderCopy(renderer, original, NULL, NULL);
-
+    SDL_RenderCopy(renderer, original, NULL, NULL);   
 
     SDL_SetRenderTarget(renderer, resized);
     //Create resized surface
-    SDL_Surface* surface = SDL_CreateRGBSurface(0, W, H, 32, 0, 0, 0, 0);
+    SDL_Surface* surface = SDL_CreateRGBSurface(0, W, H,pFormat.BitsPerPixel , 0, 0, 0, 0);
 
     //Read texture to surface
     SDL_RenderReadPixels(renderer, NULL, surface->format->format, surface->pixels,
@@ -73,14 +150,14 @@ void ASCIIBuilder::resizeSurface()
     //Realese memory
     SDL_DestroyTexture(original);
     SDL_DestroyTexture(resized);
-    SDL_FreeSurface(image);
+ 
     image = surface;
 
 }
 
 Uint32 ASCIIBuilder::get_pixel(int x, int y)
 {
-    int bpp = pFormat->BytesPerPixel;
+    int bpp = pFormat.BytesPerPixel;
     /* Here p is the address to the pixel we want to retrieve */
     Uint8* p = (Uint8*)image->pixels + y * image->pitch + x * bpp;
 
@@ -115,12 +192,17 @@ Uint32 ASCIIBuilder::get_pixel(int x, int y)
 char ASCIIBuilder::convertToChar(const Uint32& pixel)
 {
     SDL_Color RGB;
-    SDL_GetRGB(pixel, pFormat, &RGB.r, &RGB.g, &RGB.b);
+    SDL_GetRGB(pixel, &pFormat, &RGB.r, &RGB.g, &RGB.b);
     double brightness = (RGB.r + RGB.g + RGB.b) / 3.0;
     int it;
 
     it = (int(brightness / charMod) >= tableSize) ? tableSize - 1 : int(brightness / charMod);
     char toRet = paintTable[it][0];
+
+    if (colored)
+    {
+        pixelColors.push_back(RGB);
+    }
 
     return toRet;
 }
@@ -195,6 +277,9 @@ void ASCIIBuilder::convertCharsToTextures()
 
 void ASCIIBuilder::draw()
 {
+    //In order to renderer to work correctly
+    SDL_ShowWindow(drawWindow);
+
     //Get data from a tile and save it
     int W;
     int H;
@@ -213,23 +298,16 @@ void ASCIIBuilder::draw()
     //Destination for rendering
     SDL_Rect dst = { 0, 0, W, H };
 
-    for (auto c : charVec)
+    if (colored)
     {
-        //Still printing a row
-        if (c != '\n')
-        {
-            SDL_RenderCopy(renderer, glyphsTextures[c], NULL, &dst);
-
-            dst.x += W;
-        }
-        //We hit a row end move to a new row
-        else
-        {
-            dst.x = 0;
-            dst.y += H;
-            SDL_RenderCopy(renderer, glyphsTextures[c], NULL, &dst);
-        }
+        drawColored(dst);
     }
+    else
+    {
+        drawNoColor(dst);
+    }
+
+
     //Present to output texture
     SDL_RenderPresent(renderer);
     //Open preview window, target it with renderer,
@@ -239,6 +317,20 @@ void ASCIIBuilder::draw()
     SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer, outText, NULL, NULL);
     SDL_RenderPresent(renderer);
+
+    //Check for errors
+    if (outText)
+    {
+        std::cout << "Draw function ended successfully!" << std::endl;
+    }
+    else
+    {
+        std::cout << "Error with texture generation in draw function!\n";
+        std::string outMsg = "Terminating program! If you receive this message again,"
+            "contact the developer with the exit code. SDL_Error: ";
+        outMsg.append(SDL_GetError()).append("\n");
+        terminateProgram(outMsg, -101);
+    }
 
     //Save output texture to a file
     save_texture("image.png", renderer, outText);
@@ -251,6 +343,59 @@ void ASCIIBuilder::draw()
 
 }
 
+void ASCIIBuilder::drawColored(SDL_Rect& destination)
+{
+    int W = destination.w;
+    int H = destination.h;
+
+    int it = 0;
+    for (auto c : charVec)
+    {
+        SDL_Texture* texP = glyphsTextures[c];
+        SDL_Color* colorP;
+
+        //Still printing a row
+        if (c != '\n')
+        {
+            colorP = &pixelColors[it];
+            SDL_SetTextureColorMod(texP, colorP->r, colorP->g, colorP->b);
+            SDL_RenderCopy(renderer, texP, NULL, &destination);
+            destination.x += W;
+            ++it;
+        }
+        //We hit a row end move to a new row
+        else
+        {
+            destination.x = 0;
+            destination.y += H;
+        }
+
+    }
+}
+
+void ASCIIBuilder::drawNoColor(SDL_Rect& destination)
+{
+    int W = destination.w;
+    int H = destination.h;
+
+    for (auto c : charVec)
+    {
+        //Still printing a row
+        if (c != '\n')
+        {
+            SDL_RenderCopy(renderer, glyphsTextures[c], NULL, &destination);
+
+            destination.x += W;
+        }
+        //We hit a row end move to a new row
+        else
+        {
+            destination.x = 0;
+            destination.y += H;
+        }
+    }
+}
+
 void ASCIIBuilder::save_texture(const char* file_name, SDL_Renderer* renderer, SDL_Texture* texture)
 {
     //Renderer old target
@@ -260,22 +405,26 @@ void ASCIIBuilder::save_texture(const char* file_name, SDL_Renderer* renderer, S
     SDL_SetRenderTarget(renderer, texture);
     int W, H;
     SDL_QueryTexture(texture, NULL, NULL, &W, &H);
+ 
 
     //Create new surface and read texture pixel data on it
-    SDL_Surface* surface = SDL_CreateRGBSurface(0, W, H, 32, 0, 0, 0, 0);
+    SDL_Surface* surface = SDL_CreateRGBSurface(0, W, H,pFormat.BitsPerPixel, 0, 0, 0, 0);
     SDL_RenderReadPixels(renderer, NULL, surface->format->format, surface->pixels, surface->pitch);
 
     //Realease resources and target old target
+    std::cout << "\nSaving image, please wait.\nYou can close the program when it's done.\n";
     IMG_SavePNG(surface, file_name);
+    std::cout << "\nImage saved! You can now close the program!" << std::endl;
+    
     SDL_FreeSurface(surface);
     SDL_SetRenderTarget(renderer, target);
-} 
+}
 
- void ASCIIBuilder::createRendererAndWindow()
+void ASCIIBuilder::createRendererAndWindow()
 {
     //Create window
-    drawWindow = SDL_CreateWindow("SDL Tutorial",
-        SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1152, 864, SDL_WINDOW_RESIZABLE
+    drawWindow = SDL_CreateWindow("Visualizer",
+        SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_RESIZABLE
         | SDL_WINDOW_HIDDEN);
     if (drawWindow == NULL)
     {
@@ -284,7 +433,7 @@ void ASCIIBuilder::save_texture(const char* file_name, SDL_Renderer* renderer, S
     else
     {
         //Create renderer for window
-        renderer = SDL_CreateRenderer(drawWindow, -1, SDL_RENDERER_ACCELERATED);
+        renderer = SDL_CreateRenderer(drawWindow, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);
         if (renderer == NULL)
         {
             printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());

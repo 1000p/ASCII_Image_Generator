@@ -1,46 +1,5 @@
-#include "SDL.h"
-#include "SDL_Image.h"
-
+#include "UtilityFunctions.h"
 #include "ASCIIBuilder.h"
-
-#include <fstream>
-#include <sstream>
-#include <iostream>
-
-void terminateProgram(const std::string& errorMsg, int ErrorCode)
-{
-    std::cout << "The program terminated! Exit message: " << errorMsg << std::endl;
-    exit(ErrorCode);
-}
-
-std::string getImagePath()
-{
-    std::cout << "Enter absolute path to the image:\n";
-    std::string path;
-    getline(std::cin, path);
-    return path;
-}
-
-SDL_Surface* tryLoad(std::string& path)
-{
-    static int tryCounter = 3;
-    SDL_Surface* image = IMG_Load(path.c_str());
-    if (image == nullptr)
-    {
-        std::cout << "Error loading the image with path: " << path << "\n" <<
-            "Please try again.\n You left with " << tryCounter << " number of tries"
-            " before the program terminates!" << std::endl;
-        --tryCounter;
-        if (tryCounter <= 0)
-        {
-            terminateProgram("You have reached zero number of tries! \n", -404);
-        }
-
-        return nullptr;
-    }
-    return image;
-}
-
 
 int main(int argc, char* argv[])
 {
@@ -49,7 +8,7 @@ int main(int argc, char* argv[])
 
     std::string imagePath = getImagePath();
 
-    std::cout <<"You entered this image path: "<< imagePath << "\n";
+    std::cout << "You entered this image path: " << imagePath << std::endl;
 
     ASCIIBuilder builder;
     SDL_Surface* image = tryLoad(imagePath);
@@ -61,7 +20,7 @@ int main(int argc, char* argv[])
     }
     //Initialize
     builder.init(image);
-    
+
     //Build and draw
     builder.build();
     builder.draw();
